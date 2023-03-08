@@ -9,7 +9,7 @@ class node_manager:
 
 
     #call this funciton before starting the search to reset id
-    def initialize(self):
+    def initialize():
         node_manager.global_node_directory.clear()
 
 

@@ -5,7 +5,7 @@ import pyclipper
 
 from obstacle_model import *
 
-class map_viz:
+class environment:
     
     def point_at_a_distance_on_line(self, point1, point2, dt):
         d = np.linalg.norm(np.array(point1) - np.array(point2))
@@ -21,7 +21,21 @@ class map_viz:
         return vertices_inflated
 
     def __init__(self, height, width) -> None:
-        self.map = np.ones((height, width)) * 240
+        self.map = np.ones((height, width)) * 220
+
+        self.Actions = {"LEFT", "RIGHT", "UP", "DOWN", "UP_LEFT", "UP_RIGHT", "DOWN_LEFT", "DOWN_RIGHT"}
+
+        self.ActionValues = {
+                                "LEFT":(-1, 0), "RIGHT":(1, 0), "UP":(0, 1), "DOWN":(0, -1), 
+                                "UP_LEFT":(-1, 1), "UP_RIGHT":(1, 1),
+                                "DOWN_LEFT":(-1, -1), "DOWN_RIGHT":(1, -1)
+                             }
+        
+        self.ActionCost   = {
+                                "LEFT":1.0, "RIGHT":1.0, "UP":1.0, "DOWN":1.0, 
+                                "UP_LEFT":1.4, "UP_RIGHT":1.4,
+                                "DOWN_LEFT":1.4, "DOWN_RIGHT":1.4
+                            }
 
         self.boundary_model = obstacle_model([
             [(600,0), (600,250), (0,250), (0,0)]
@@ -58,12 +72,21 @@ class map_viz:
                 elif not self.inflated_boundary_model.check_obstacle((j,i)):
                     self.map[i,j] = 120
 
+    def is_valid_position(self, position):
+        if self.inflated_obstacle_model.check_obstacle((position[1],position[0])):
+            return False
+        elif not self.inflated_boundary_model.check_obstacle((position[1],position[0])):
+            return False
+
+
     def show_map(self):
         cv.imshow("map", self.map.astype('uint8'))
-        cv.waitKey(0)
 
+    def update_map(self, explored_node):
+        i, j = explored_node
+        self.map[i, j] = 255
 
 if __name__ == "__main__":
-    _map_viz = map_viz(250, 600)
+    _map_viz = environment(250, 600)
     _map_viz.create_map()
     _map_viz.show_map()

@@ -35,3 +35,6 @@ class node:
 
         #Indicates if exploration for the node is completed
         self.IsExplored = False
+
+    def __lt__(self, other):
+        return self.Cost_to_Come < other.Cost_to_Come

@@ -6,7 +6,9 @@ import numpy as np
 from node import *
 from node_manager import *
 
-from queue import PriorityQueue, Empty
+# from queue import PriorityQueue, Empty
+
+import heapq
 
 from environment import *
 
@@ -28,23 +30,13 @@ class ActionHandler:
         }
 
     def position_to_node(self, parent_node, simulated_position, action_cost):
-        Total_Cost_To_Come = action_cost+parent_node.Cost_to_Come
 
         if not self.env.is_valid_position(simulated_position):
             return False, None
         
-        elif simulated_position not in node_manager.global_node_directory:
-            return True, node_manager.make_node(self.simulated_position, Total_Cost_To_Come)
+        return True, (simulated_position, action_cost)
         
-        elif simulated_position in self.visited_node_list:
-            return False, None
-        
-        else:
-            if node_manager.global_node_directory[simulated_position].Cost_To_Come > Total_Cost_To_Come:
-                node_manager.global_node_directory[simulated_position].Cost_To_Come = Total_Cost_To_Come
-                node_manager.global_node_directory[simulated_position].Parent_Node_hash = parent_node.Node_hash
-                return True, node_manager.global_node_directory[simulated_position]
-
+  
 
     def PerformAction(self, parent_node, action):
         agents_postion = parent_node.Node_State
@@ -103,38 +95,55 @@ class dijkstra_planner:
 
         #move the input node into explored list
         self.visited_node_list.add(agents_postion)
+        self.env.update_map(agents_postion)
 
-        NewNode = None
+        Sim_Pose = None
         Status = False
 
         #iterate through all possible actions
         for action in self.env.Actions:
             #make a copy of the current agents position
-            simulated_position = copy.deepcopy(agents_postion)
 
             #Compute agents possible furture position
             if action == "LEFT":
-                Status ,NewNode = self.action_handler.ActionMoveLeft(parent_node)
+                Status ,Sim_Pose = self.action_handler.ActionMoveLeft(parent_node)
             elif action == "RIGHT":
-                Status ,NewNode = self.action_handler.ActionMoveRight(parent_node)
+                Status ,Sim_Pose = self.action_handler.ActionMoveRight(parent_node)
             elif action == "UP":
-                Status ,NewNode = self.action_handler.ActionMoveUp(parent_node)
+                Status ,Sim_Pose = self.action_handler.ActionMoveUp(parent_node)
             elif action == "DOWN":
-                Status ,NewNode = self.action_handler.ActionMoveDown(parent_node)
+                Status ,Sim_Pose = self.action_handler.ActionMoveDown(parent_node)
             elif action == "UP_LEFT":
-                Status ,NewNode = self.action_handler.ActionMoveUpLeft(parent_node)
+                Status ,Sim_Pose = self.action_handler.ActionMoveUpLeft(parent_node)
             elif action == "UP_RIGHT":
-                Status ,NewNode = self.action_handler.ActionMoveUpRight(parent_node)
+                Status ,Sim_Pose = self.action_handler.ActionMoveUpRight(parent_node)
             elif action == "DOWN_LEFT":
-                Status ,NewNode = self.action_handler.ActionMoveDownLeft(parent_node)
+                Status ,Sim_Pose = self.action_handler.ActionMoveDownLeft(parent_node)
             elif action == "DOWN_RIGHT":
-                Status ,NewNode = self.action_handler.ActionMoveDownRight(parent_node)
+                Status ,Sim_Pose = self.action_handler.ActionMoveDownRight(parent_node)
 
             #If the future position is in the bounds of the environemnt
             if Status:
-                #Found an unique state that needs to be pushed in to the que
-                NewNode.TRANSITION_ACTION = action
-                self.pending_state_que.append([NewNode.Cost_to_Come, NewNode])
+                
+                NewNode = None
+
+                simulated_position , Total_Cost_To_Come = Sim_Pose
+                if simulated_position not in node_manager.global_node_directory:
+                    NewNode = node_manager.make_node(simulated_position, Total_Cost_To_Come)
+                
+                elif simulated_position in self.visited_node_list:
+                    NewNode = None
+                
+                else:
+                    if node_manager.global_node_directory[simulated_position].Cost_to_Come > Total_Cost_To_Come:
+                        node_manager.global_node_directory[simulated_position].Cost_to_Come = Total_Cost_To_Come
+                        node_manager.global_node_directory[simulated_position].Parent_Node_hash = parent_node.Node_hash
+                        NewNode = node_manager.global_node_directory[simulated_position]
+
+                if NewNode != None:
+                    #Found an unique state that needs to be pushed in to the que
+                    NewNode.TRANSITION_ACTION = action
+                    heapq.heappush(self.pending_state_que, NewNode)
 
         return False
     
@@ -154,33 +163,49 @@ class dijkstra_planner:
         self.goal_state = goal_state
         self.initial_state = start_state
 
+        if not self.env.is_valid_position(start_state):
+            print(f"Invalid start state.")
+            return
+
+        if not self.env.is_valid_position(goal_state):
+            print(f"Invalid goal state.")
+            return
+
         #Initialize search que. This stores the nodes that needs to be explored
-        self.pending_state_que = PriorityQueue()
         start_node = node_manager.make_node(self.initial_state)
-        self.pending_state_que.put([start_node.Cost_to_Come, start_node])
+        self.pending_state_que = [start_node]
+        heapq.heapify(self.pending_state_que)
 
         self.visited_node_list = set()
 
         self.env.show_map()
         #Perform search till a goal state is reached or maximum number of iterations reached
-        print("Please wait while searching for the goal state")
+        print("Please wait while searching for the goal state...")
         
         while True:
-            next_item = self.pending_state_que.get()
+            
+            next_item = heapq.heappop(self.pending_state_que)
 
             if next_item!= None:
-                priority, next_node = next_item
+                next_node = next_item
+
+                # if next_node.Node_State[0] == 142 and next_node.Node_State[1] == 595:
+                #     i =0
+
+                # self.env.save_image()
+                print(f"Pending : {len(self.pending_state_que)}")
+                print(f"Priority: {next_node.Cost_to_Come}, Node : {next_node.Node_State}")
 
                 if next_node.Node_State == self.goal_state:
                     print("\nFound the goal state!!!")
+
+                    self.env.save_image()
                     return True
 
-                if priority != next_node.Cost_to_Come:
+                if next_node.Node_State in self.visited_node_list:
                     continue
                 else:
                     self.explore_actions(next_node)
-                    print('\r'+f"Number of states explored : {len(self.explored_state_que)}", end='')
-
             else:
                 print("\nUnable to find the goal state!!!")
                 return False
@@ -189,6 +214,7 @@ class dijkstra_planner:
 
 if __name__ == "__main__":
     _environment = environment(250, 600)
+    _environment.create_map()
     _actionHandler = ActionHandler(_environment)
     _dijkstra_planner = dijkstra_planner(_environment, _actionHandler)
-    _dijkstra_planner.find_goal_node((0,0), (10,10))
+    _dijkstra_planner.find_goal_node((20,20), (137,590))

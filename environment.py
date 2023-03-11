@@ -65,6 +65,8 @@ class environment:
     def create_map(self):
         for i in range(self.map.shape[0]):
             for j in range(self.map.shape[1]):
+                if i == 19 and j ==20:
+                    i = i
                 if self.original_obstacle_model.check_obstacle((j,i)):
                     self.map[i,j] = 0
                 elif self.inflated_obstacle_model.check_obstacle((j,i)):
@@ -77,6 +79,8 @@ class environment:
             return False
         elif not self.inflated_boundary_model.check_obstacle((position[1],position[0])):
             return False
+        
+        return True
 
 
     def show_map(self):
@@ -86,7 +90,11 @@ class environment:
         i, j = explored_node
         self.map[i, j] = 255
 
+    def save_image(self):
+        cv.imwrite("discovered_path.png", self.map)
+
 if __name__ == "__main__":
     _map_viz = environment(250, 600)
     _map_viz.create_map()
     _map_viz.show_map()
+    cv.waitKey(0)

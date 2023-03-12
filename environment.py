@@ -87,10 +87,11 @@ class environment:
 
         #create inflated polygon objects obstacle model
         self.inflated_obstacle_model = obstacle_model([
-            self.inflate_polygon([(150,0), (150,100), (100,100), (100,0)], 5),                          # Inflated Polygon corresponding to botom rectangular pillar
-            self.inflate_polygon([(150,150), (150,250), (100,250), (100,150)], 5),                      # Inflated Polygon corresponding to Top rectangular pillar
-            self.inflate_polygon([(360,87), (360,163), (300,200), (240,163), (240,87), (300,50)], 5),   # Inflated Polygon corresponding to hexgon 
-            self.inflate_polygon([(510,125), (460,225), (460,25) ], 5),                                 # Inflated Polygon corresponding to Triangle 
+
+        [(95,0), (155,0), (155,105), (95,105), (95,0)],                         # Inflated Polygon corresponding to botom rectangular pillar
+        [(95,145), (155,145), (155,250), (95,250), (95,145)],                   # Inflated Polygon corresponding to Top rectangular pillar
+        [(365,85), (365,165), (300,205), (235,165), (235, 85), (300,45)],       # Inflated Polygon corresponding to hexgon 
+        [(455,5), (515,125), (455,245), (455,5)],                               # Inflated Polygon corresponding to Triangle          
         ])  
 
 

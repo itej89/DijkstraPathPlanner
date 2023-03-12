@@ -42,7 +42,8 @@ class environment:
             height (int): height of the map
             width (int): width of the map
         """
-
+        self.height = height
+        self.width = width
         #create a map fo given dimentions. 3 channels for opencv BGR
         self.map = np.ones((height, width, 3))
 
@@ -152,6 +153,15 @@ class environment:
         self.map[i, j] = [255, 255, 255]
         self.refresh_map()
 
+    def update_batch_map(self, explored_nodes):
+        """Update map with explored nodes colour
+
+        Args:
+            explored_node (tuple): state that has been visited
+        """
+        self.map[explored_nodes] =[255, 255, 255]
+        self.refresh_map()
+
     def save_image(self, file_path):
         """saves current state of the environment in the file location as image 
 
@@ -180,6 +190,19 @@ class environment:
         i, j = position
         self.map[i, j] = [255, 0, 0]
 
+
+    #primitives to save video of the jplanning environment-----------------------
+    def begin_video_writer(self):
+         self.writer= cv.VideoWriter('Animation Video.mp4', cv.VideoWriter_fourcc(*'DIVX'), 10, (self.width, self.height))
+    
+    def write_video_frame(self):
+        image = cv.flip(self.map.astype('uint8'), 0)
+        self.writer.write(image)
+
+    def close_video_writer(self):
+        self.writer.release()
+    #--------------------------------------------------------------------------------
+    
 
 if __name__ == "__main__":
     _map_viz = environment(250, 600)

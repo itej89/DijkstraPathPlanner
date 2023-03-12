@@ -1,7 +1,5 @@
-import os
-import collections
-import copy
-import numpy as np
+import sys
+import time
 
 import heapq
 
@@ -12,7 +10,9 @@ from action_handler import *
 
 
 
+#Git repo link https://github.com/itej89/SimplePathPlanner
 
+ 
 class dijkstra_planner:
 
     def __init__(self, env, action_handler) -> None:
@@ -99,14 +99,6 @@ class dijkstra_planner:
         self.initial_state = start_state
         self.Final_Node = None
 
-        if not self.env.is_valid_position(start_state):
-            print(f"Invalid start state.")
-            return
-
-        if not self.env.is_valid_position(goal_state):
-            print(f"Invalid goal state.")
-            return
-
         #Initialize search que. This stores the nodes that needs to be explored
         start_node = node_manager.make_node(self.initial_state)
         self.pending_state_que = [start_node]
@@ -115,7 +107,6 @@ class dijkstra_planner:
         self.visited_node_list = {}
 
         #Perform search till a goal state is reached or maximum number of iterations reached
-        print("Please wait while searching for the goal state...")
         
         while True:
             #fetch next node to be explored
@@ -127,7 +118,7 @@ class dijkstra_planner:
                 #Check if the next node is the goal node, then return success
                 if next_node.Node_State == self.goal_state:
                     self.Final_Node = next_node
-                    print("\nFound the goal state!!!")
+                    print("Found the goal state!!!")
                     return True
 
                 #Check if the next node has already been visited then ignore the node
@@ -137,7 +128,7 @@ class dijkstra_planner:
                 else:
                     self.explore_actions(next_node)
             else:
-                print("\nUnable to find the goal state!!!")
+                print("Unable to find the goal state!!!")
                 return False
 
     def back_track(self):
@@ -155,7 +146,8 @@ class dijkstra_planner:
                 trajectory.append(last_node.Parent_Node_hash)
                 last_node = node_manager.global_node_directory[last_node.Parent_Node_hash]
 
-            return trajectory.reverse()
+            trajectory.reverse()
+            return trajectory
         
         return None
     
@@ -170,7 +162,7 @@ class dijkstra_planner:
 
         #variable to control gui update rate
         update_count = 0
-        #Loop through all visited nodes and show on the cv window
+        # Loop through all visited nodes and show on the cv window
         for position in self.visited_node_list:
             self.env.update_map(position)
             self.env.highlight_state(self.initial_state)
@@ -179,9 +171,14 @@ class dijkstra_planner:
 
             update_count +=1
             #Update gui every 300 iteration
-            if update_count == 300:
+            if update_count == 500:
                 update_count = 0
+                _environment.write_video_frame()
                 cv.waitKey(1)
+
+
+
+     
 
     def visualize_trajectory(self, trajectory):
         """Funciton to visualize trajectory
@@ -192,34 +189,68 @@ class dijkstra_planner:
         #Loop through all points in the trajectory
         for point in trajectory:
             _environment.highlight_point(point)
-        cv.waitKey(1)
         #upodate map with the trajectory
         _environment.refresh_map()
+        for i in range(20):
+            _environment.write_video_frame()
+        cv.waitKey(1)
 
 if __name__ == "__main__":
 
-    #define goal and start state
-    start_state = (20, 20)
-    goal_state  = (126, 412)
+    if len(sys.argv) == 3:
 
-    #Create environment
-    _environment = environment(250, 600)
-    _environment.create_map()
+        str_start_pos = sys.argv[1].replace("[", "").replace("]", "").replace(" ", "").split(",")
+        str_goal_pos = sys.argv[2].replace("[", "").replace("]", "").replace(" ", "").split(",")
+        #define goal and start state
+        start_state = (int(str_start_pos[1]), int(str_start_pos[0]))
+        goal_state  = (int(str_goal_pos[1]), int(str_goal_pos[0]))
 
-    #Create action handler for the environment
-    _actionHandler = action_handler(_environment)
+        #Create environment
+        print("Please wait while creating the environment.")
+        _environment = environment(250, 600)
+        _environment.create_map()
+        print("Environment created successfully.")
 
-    #create planner
-    _dijkstra_planner = dijkstra_planner(_environment, _actionHandler)
+        good_states = True
+        #Check if the given state are valid
+        if not _environment.is_valid_position(start_state):
+            print(f"Invalid start state.") 
+            good_states = False
+            
+        if not _environment.is_valid_position(goal_state):
+            print(f"Invalid goal state.") 
+            good_states = False
+            
+        
+        if good_states:
+            #Create action handler for the environment
+            _actionHandler = action_handler(_environment)
 
-    #Request planner to find a plan
-    _status =  _dijkstra_planner.find_goal_node(start_state, goal_state)
+            #create planner
+            _dijkstra_planner = dijkstra_planner(_environment, _actionHandler)
 
-    #If Planner is successfull, visualize the plan
-    if _status:
-        trajectory = _dijkstra_planner.back_track()
-        if trajectory != None:
-            _dijkstra_planner.visualize_exploration()
-            _dijkstra_planner.visualize_trajectory(trajectory)
-            _environment.save_image("Solution.png")
-            cv.waitKey(0)
+            #Request planner to find a plan
+            print("Planning started.")
+            print(f"Start Psotion : {start_state}, Goal Postion : {goal_state}")
+            print("Please wait while searching for the goal state...")
+            start_time = time.time()
+            _status =  _dijkstra_planner.find_goal_node(start_state, goal_state)
+            elspsed_time = time.time() - start_time
+
+            print(f"Total time taken to run the algorithm : {elspsed_time} seconds\n")
+
+            #If Planner is successfull, visualize the plan
+            if _status:
+                trajectory = _dijkstra_planner.back_track()
+                if trajectory != None:
+                    _environment.begin_video_writer()
+                    _dijkstra_planner.visualize_exploration()
+                    _dijkstra_planner.visualize_trajectory(trajectory)
+                    _environment.close_video_writer()
+
+                    _environment.save_image("Solution.png")
+                    cv.waitKey(0)
+
+    else:
+        print(f"Invalid number of command line arguments recieved! Please remove any unncessary spaces and try again! \n\n \
+Please run the program as : 'python3 dijkstra_venkatatejkiranreddy_polamreddy.py  [Start_X,Start_Y] [Goal_X,Goal_Y]'\n")

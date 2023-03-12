@@ -33,8 +33,6 @@ class node:
         #Contains cost-to-Go to the goal
         self.Cost_to_Go = cost_to_go
 
-        #Indicates if exploration for the node is completed
-        self.IsExplored = False
-
+    #Funciton to help heapq for comparing two node objects
     def __lt__(self, other):
         return self.Cost_to_Come < other.Cost_to_Come

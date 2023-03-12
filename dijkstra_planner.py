@@ -28,8 +28,6 @@ class dijkstra_planner:
             parent_node (node): node representing a state of the
             environment
 
-        Returns:
-            bool: returns True if goal state is found, False otherwise
         """
 
         #get the position of the agent location
@@ -53,27 +51,36 @@ class dijkstra_planner:
             if Status:
                 
                 NewNode = None
-
                 simulated_position , Total_Cost_To_Come = Sim_Pose
+
+                #if state has been visited for the first time then create anew node for the state
                 if simulated_position not in node_manager.global_node_directory:
+                    #Create a new node
                     NewNode = node_manager.make_node(simulated_position, Total_Cost_To_Come)
+                    #Update the parent for the node
                     NewNode.Parent_Node_hash = parent_node.Node_hash
                 
+                #else of the state has already been explored then ignore the action
                 elif simulated_position in self.visited_node_list:
                     NewNode = None
                 
+                #else if the state is in pending que then verify its current cost 
+                # and update its cost and parent if necessary
                 else:
+                    #If node can be reached in less cost
                     if node_manager.global_node_directory[simulated_position].Cost_to_Come > Total_Cost_To_Come:
+                        #update cost
                         node_manager.global_node_directory[simulated_position].Cost_to_Come = Total_Cost_To_Come
+                        #update new parent node
                         node_manager.global_node_directory[simulated_position].Parent_Node_hash = parent_node.Node_hash
                         NewNode = node_manager.global_node_directory[simulated_position]
 
+                #Push new node to the pending que for future expoloration
                 if NewNode != None:
                     #Found an unique state that needs to be pushed in to the que
                     NewNode.TRANSITION_ACTION = action
                     heapq.heappush(self.pending_state_que, NewNode)
 
-        return False
     
     def find_goal_node(self, start_state, goal_state) -> bool:
         """Takes start stat and goal state for the environement 
@@ -111,19 +118,22 @@ class dijkstra_planner:
         print("Please wait while searching for the goal state...")
         
         while True:
-
+            #fetch next node to be explored
             next_item = heapq.heappop(self.pending_state_que)
 
             if next_item!= None:
                 next_node = next_item
 
+                #Check if the next node is the goal node, then return success
                 if next_node.Node_State == self.goal_state:
                     self.Final_Node = next_node
                     print("\nFound the goal state!!!")
                     return True
 
+                #Check if the next node has already been visited then ignore the node
                 if next_node.Node_State in self.visited_node_list:
                     continue
+                ##lse explore the node
                 else:
                     self.explore_actions(next_node)
             else:
@@ -131,22 +141,36 @@ class dijkstra_planner:
                 return False
 
     def back_track(self):
+        """Funciton to find the final trajectory given the final goal node
+
+        Returns:
+            list of tuples: list of trajectory points
+        """
         if self.Final_Node != None:
             last_node = self.Final_Node
             trajectory = [last_node.Node_hash]
+
+            #back track untill the start node has been reached
             while last_node.Parent_Node_hash != None:
                 trajectory.append(last_node.Parent_Node_hash)
                 last_node = node_manager.global_node_directory[last_node.Parent_Node_hash]
 
-            return trajectory
+            return trajectory.reverse()
+        
         return None
     
-    def show_exploration(self):
+    def visualize_exploration(self):
+        """Visualize exploration of the nodes
+        """
+        #indicate start and goal nodes with circles
         self.env.highlight_state(start_state)
         self.env.highlight_state(goal_state)
         self.env.refresh_map()
         cv.waitKey(1)
+
+        #variable to control gui update rate
         update_count = 0
+        #Loop through all visited nodes and show on the cv window
         for position in self.visited_node_list:
             self.env.update_map(position)
             self.env.highlight_state(self.initial_state)
@@ -154,34 +178,48 @@ class dijkstra_planner:
             _environment.refresh_map()
 
             update_count +=1
+            #Update gui every 300 iteration
             if update_count == 300:
                 update_count = 0
                 cv.waitKey(1)
 
-    def show_trajectory(self, trajectory):
+    def visualize_trajectory(self, trajectory):
+        """Funciton to visualize trajectory
+
+        Args:
+            trajectory (lsit of tuples): trajectory
+        """
+        #Loop through all points in the trajectory
         for point in trajectory:
             _environment.highlight_point(point)
         cv.waitKey(1)
-
+        #upodate map with the trajectory
         _environment.refresh_map()
 
 if __name__ == "__main__":
+
+    #define goal and start state
     start_state = (20, 20)
     goal_state  = (126, 412)
-    # goal_state  = (30, 70)
 
+    #Create environment
     _environment = environment(250, 600)
     _environment.create_map()
 
-
+    #Create action handler for the environment
     _actionHandler = action_handler(_environment)
 
+    #create planner
     _dijkstra_planner = dijkstra_planner(_environment, _actionHandler)
+
+    #Request planner to find a plan
     _status =  _dijkstra_planner.find_goal_node(start_state, goal_state)
+
+    #If Planner is successfull, visualize the plan
     if _status:
         trajectory = _dijkstra_planner.back_track()
         if trajectory != None:
-            _dijkstra_planner.show_exploration()
-            _dijkstra_planner.show_trajectory(trajectory)
+            _dijkstra_planner.visualize_exploration()
+            _dijkstra_planner.visualize_trajectory(trajectory)
             _environment.save_image("Solution.png")
             cv.waitKey(0)

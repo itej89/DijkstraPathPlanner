@@ -6,7 +6,7 @@ class action_handler:
         """Initilaize action handler parameters
 
         Args:
-            env (_type_): _description_
+            env (environment): referance ot environment
         """
         self.env = env
 
@@ -22,22 +22,34 @@ class action_handler:
             "DOWN_LEFT" : self.ActionMoveDownRight,
         }
 
-    def position_to_node(self, parent_node, simulated_position, action_cost):
-
-        if not self.env.is_valid_position(simulated_position):
-            return False, None
-        
-        return True, (simulated_position, action_cost)
-        
-  
-
     def PerformAction(self, parent_node, action):
+        """Compute the next state and estimate the total cost for the next state
+
+        Args:
+            parent_node (node): node of the 
+            action (string): action label
+
+        Returns:
+            tuple: validity of the action, action cost
+        """
+
         agents_postion = parent_node.Node_State
+
+        #Simulate agents nect position
         simulated_position = (agents_postion[0] + self.env.ActionValues[action][0], 
                                 agents_postion[1] + self.env.ActionValues[action][1])
+        
+        #Compute the total cost of the action
         action_cost = parent_node.Cost_to_Come + self.env.ActionCost[action]
-        return self.position_to_node(parent_node, simulated_position, action_cost)
 
+        #Check if the computed position os valid
+        if not self.env.is_valid_position(simulated_position):
+                return False, None
+        
+        #return the estimated position and cost
+        return True, (simulated_position, action_cost)
+
+    
     def ActionMoveLeft(self, parent_node):
         return self.PerformAction(parent_node, "LEFT")
         

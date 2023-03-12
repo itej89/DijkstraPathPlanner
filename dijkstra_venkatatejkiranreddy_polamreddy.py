@@ -109,9 +109,12 @@ class dijkstra_planner:
         #Perform search till a goal state is reached or maximum number of iterations reached
         
         while True:
-            #fetch next node to be explored
-            next_item = heapq.heappop(self.pending_state_que)
-
+            if len(self.pending_state_que) > 0:
+                #fetch next node to be explored
+                next_item = heapq.heappop(self.pending_state_que)
+            else:
+                next_item = None
+                
             if next_item!= None:
                 next_node = next_item
 

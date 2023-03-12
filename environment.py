@@ -1,7 +1,6 @@
 import numpy as np
 import cv2 as cv
 
-import pyclipper
 
 from obstacle_model import *
 
@@ -15,25 +14,6 @@ class environment:
 
         return ((1-t)*point2[0]+t*point1[0], (1-t)*point2[1]+t*point1[1])
     
-
-    def inflate_polygon(self, vertices, radius):
-        """Fucniton in inflate a polygon by a given size
-
-        Args:
-            vertices (list of tuples): vertices of the polygon to be inflated
-            radius (int): size by which polygon needs to b einflated
-
-        Returns:
-            list of tuples: vertice of the inlfated polygon
-        """
-
-        #Use pyclipper library to inflate the polygon
-        pco = pyclipper.PyclipperOffset()
-        pco.AddPath(vertices, pyclipper.PT_CLIP, pyclipper.ET_CLOSEDPOLYGON)
-        vertices_inflated = pco.Execute(radius)
-        #retrieve the inflated polygon vertices
-        vertices_inflated = [tuple(x) for x in vertices_inflated[0]]
-        return vertices_inflated
 
     def __init__(self, height, width) -> None:
         """Initialize environment parameters
@@ -73,7 +53,7 @@ class environment:
         
         #create inflated boundary obstacle model
         self.inflated_boundary_model = obstacle_model([
-            self.inflate_polygon([(600,0), (600,250), (0,250), (0,0)], -5),
+            [(595,5), (595,245), (5,245), (5, 5)]
             ])
         
         #create original polygon objects obstacle model

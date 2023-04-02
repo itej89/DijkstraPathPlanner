@@ -1,7 +1,5 @@
 # DijkstraPathPlanner
 
-## Git repo link : https://github.com/itej89/SimplePathPlanner
-
 ## Required libraries
 
     please make sure to install following before executing the code:

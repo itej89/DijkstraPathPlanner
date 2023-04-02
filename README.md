@@ -1,7 +1,4 @@
-# SimplePathPlanner
-
-# ENPM661 Project2
-
+# DijkstraPathPlanner
 
 ## Git repo link : https://github.com/itej89/SimplePathPlanner
 
